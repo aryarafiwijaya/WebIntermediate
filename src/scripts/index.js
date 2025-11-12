@@ -51,7 +51,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // 🔔 PUSH NOTIFICATION HANDLER
 // ========================================
 async function initPushNotification(registration) {
-  // Note: Push notification handling is now moved to app-bar.js for better UI management
+  // Push notification handling is now moved to app-bar.js to avoid duplicate handlers
   console.log('Push notification initialized in app-bar component');
 }
 
