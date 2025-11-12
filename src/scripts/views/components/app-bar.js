@@ -17,8 +17,8 @@ export default class AppBar {
             <li><a href="#/add-story">Tambah Story</a></li>
             ${
               isLoggedIn()
-                ? `<li><button id="subscribe-notification" class="btn-subscribe" style="display: none;">Aktifkan Notifikasi</button></li>
-                   <li><button id="unsubscribe-notification" class="btn-unsubscribe" style="display: none;">Nonaktifkan Notifikasi</button></li>
+                ? `<li><button id="subscribe-notification" class="btn-subscribe" style="display: block;">Aktifkan Notifikasi</button></li>
+                   <li><button id="unsubscribe-notification" class="btn-unsubscribe" style="display: block;">Nonaktifkan Notifikasi</button></li>
                    <li><button id="logoutBtn" class="btn-logout">Keluar</button></li>`
                 : `<li><a href="#/login">Masuk</a></li>
                    <li><a href="#/register">Daftar</a></li>`
@@ -66,19 +66,8 @@ export default class AppBar {
     const subscribeBtn = document.querySelector('#subscribe-notification');
     const unsubscribeBtn = document.querySelector('#unsubscribe-notification');
 
-    // Check current subscription status
-    if ('serviceWorker' in navigator && 'PushManager' in window) {
-      const registration = await navigator.serviceWorker.ready;
-      const existingSubscription = await registration.pushManager.getSubscription();
-
-      if (existingSubscription) {
-        // Already subscribed, show unsubscribe button
-        if (unsubscribeBtn) unsubscribeBtn.style.display = 'inline-block';
-      } else {
-        // Not subscribed, show subscribe button
-        if (subscribeBtn) subscribeBtn.style.display = 'inline-block';
-      }
-    }
+    // Always show both buttons when logged in, let user choose
+    // No need to check subscription status here
 
     if (subscribeBtn && 'serviceWorker' in navigator && 'PushManager' in window) {
       subscribeBtn.addEventListener('click', async () => {
@@ -103,7 +92,7 @@ export default class AppBar {
             return;
           }
 
-          const { endpoint, keys } = subscription.toJSON();
+          const subscriptionData = subscription.toJSON();
 
           const response = await fetch('https://story-api.dicoding.dev/v1/notifications/subscribe', {
             method: 'POST',
@@ -112,10 +101,10 @@ export default class AppBar {
               'Authorization': `Bearer ${token}`,
             },
             body: JSON.stringify({
-              endpoint,
+              endpoint: subscriptionData.endpoint,
               keys: {
-                p256dh: keys.p256dh,
-                auth: keys.auth,
+                p256dh: subscriptionData.keys.p256dh,
+                auth: subscriptionData.keys.auth,
               },
             }),
           });
@@ -124,9 +113,7 @@ export default class AppBar {
           if (!response.ok) throw new Error(result.message);
 
           alert('Notifikasi berhasil diaktifkan!');
-          // Toggle buttons
-          subscribeBtn.style.display = 'none';
-          if (unsubscribeBtn) unsubscribeBtn.style.display = 'inline-block';
+          // Note: Buttons remain visible, user can choose to subscribe/unsubscribe anytime
         } catch (err) {
           console.error('Push subscription error:', err);
           alert('Gagal mengaktifkan notifikasi.');
@@ -163,9 +150,7 @@ export default class AppBar {
           // Unsubscribe locally
           await subscription.unsubscribe();
           alert('Notifikasi berhasil dinonaktifkan.');
-          // Toggle buttons
-          unsubscribeBtn.style.display = 'none';
-          if (subscribeBtn) subscribeBtn.style.display = 'inline-block';
+          // Note: Buttons remain visible, user can choose to subscribe/unsubscribe anytime
         } catch (err) {
           console.error('Push unsubscribe error:', err);
           alert('Gagal menonaktifkan notifikasi.');
